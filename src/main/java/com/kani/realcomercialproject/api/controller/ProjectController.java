@@ -26,11 +26,12 @@ import java.util.stream.Stream;
 public class ProjectController {
     IProjectRepository projectRepository;
     ConvertProjectToProjectDto projectDto;
+    ControllerHelper controllerHelper;
     public static final String FETCH_PROJECT = "/api/projects";
     public static final String CREATE_PROJECT = "/api/project";
     public static final String EDIT_PROJECT = "/api/project/{id}/edit";
     public static final String DELETE_PROJECT = "/api/project/{id}/delete";
-    //public static final String CREATE_OR_UPDATE_PROJECT = "/api/project/create_or_update";
+    public static final String CREATE_OR_UPDATE_PROJECT = "/api/project/create_or_update";
 
     @GetMapping(FETCH_PROJECT)
     public List<ProjectDto> allProjects(@RequestParam(value = "prefix_name", required = false)
@@ -42,6 +43,46 @@ public class ProjectController {
                 .orElseGet(projectRepository::streamAll);
         return projects
                 .map(projectDto::convertToProjectDto).collect(Collectors.toList());
+    }
+
+    @PutMapping(CREATE_OR_UPDATE_PROJECT)
+    public ProjectDto createOrUpdateProject(
+            @RequestParam(value = "project_id", required = false) Optional<Long> optionalProjectId,
+            @RequestParam(value = "project_name", required = false) Optional<String> optionalProjectName) throws BadRequestException {
+
+        optionalProjectName = optionalProjectName.filter(projectName -> !projectName.trim().isEmpty());
+
+        boolean isCreate = !optionalProjectId.isPresent();
+
+        if (isCreate && !optionalProjectName.isPresent()) {
+            throw new BadRequestException("Project name can't be empty.");
+        }
+
+        final Project project = optionalProjectId
+                .map(controllerHelper::getProjectOrThrowException)
+                .orElseGet(() -> Project.builder().build());
+
+        optionalProjectName
+                .ifPresent(projectName -> {
+
+                    projectRepository
+                            .findByName(projectName)
+                            .filter(anotherProject -> !Objects.equals(anotherProject.getId(), project.getId()))
+                            .ifPresent(anotherProject -> {
+                                try {
+                                    throw new BadRequestException(
+                                            String.format("Project \"%s\" already exists.", projectName)
+                                    );
+                                } catch (BadRequestException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+
+                    project.setName(projectName);
+                });
+
+        final Project savedProject = projectRepository.saveAndFlush(project);
+        return projectDto.convertToProjectDto(savedProject);
     }
 
     @PostMapping(CREATE_PROJECT)
@@ -94,39 +135,4 @@ public class ProjectController {
         projectRepository.deleteById(id);
         return AnswerDto.answerDto(true);
     }
-
-
-    //    @PutMapping(CREATE_OR_UPDATE_PROJECT)
-//    public ProjectDto createOrUpdateProject(
-//            @RequestParam(value = "project_id", required = false) Optional<Long> optionalProjectId,
-//            @RequestParam(value = "project_name") Optional<String> optionalProjectName) throws BadRequestException {
-//
-//       optionalProjectName = optionalProjectName.filter(projectName -> !projectName.trim().isEmpty());
-//       boolean isCreated = !optionalProjectId.isPresent();
-//
-//        if(isCreated && !optionalProjectName.isPresent()){
-//            throw new BadRequestException("Project name can not be empty!!!");
-//        }
-//
-//       Project project = optionalProjectId
-//               .map(this::getProjectOrThrowException)
-//               .orElseGet(()-> Project.builder().build());
-//
-//       optionalProjectName.ifPresent(projectName ->{
-//           projectRepository.findByName(projectName)
-//                   .filter(anotherProject -> !Objects.equals(anotherProject.getId(), project.getId()))
-//                   .ifPresent(anotherProject ->{
-//                       try {
-//                           throw new BadRequestException("Project already exists: " + projectName);
-//                       } catch (BadRequestException e) {
-//                           throw new RuntimeException(e);
-//                       }
-//        });
-//           project.setName(projectName);
-//    });
-//        final Project saveProject = projectRepository.save(project);
-//        return projectDto.convertToProjectDto(saveProject);
-//    }
-
-
 }

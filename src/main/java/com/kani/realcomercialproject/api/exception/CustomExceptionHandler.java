@@ -10,7 +10,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @ControllerAdvice
 @Log4j2
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
-
    @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> exception(Exception exception, WebRequest webRequest) throws Exception {
        log.error("Exception: ", exception);

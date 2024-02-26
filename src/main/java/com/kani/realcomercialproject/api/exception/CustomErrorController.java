@@ -32,9 +32,4 @@ public class CustomErrorController implements ErrorController {
                         .errorDescription((String) attributes.get("message"))
                         .build());
     }
-
-
-
-
-
 }

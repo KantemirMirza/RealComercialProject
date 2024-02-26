@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ConvertProjectToProjectDto {
-
     public ProjectDto convertToProjectDto(Project project){
         return ProjectDto.builder()
                 .id(project.getId())
