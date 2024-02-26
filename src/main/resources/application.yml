@@ -1,0 +1,13 @@
+server:
+  port: 9899
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  datasource:
+    url: jdbc:mysql://localhost:3600/real
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
